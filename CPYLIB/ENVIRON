@@ -1,0 +1,30 @@
+#ifndef ENVIRON
+#define ENVIRON
+
+#pragma linkage(BPX1ENV, OS)
+
+#define MUST_STAY_CLEAN  13
+#define MSC_QUERY        0
+#define MSC_ENABLE       1
+#define MSC_DISABLED     0
+#define MSC_ENABLED      1
+#define MSC_ENABLED_COND 2
+
+extern void BPX1ENV(int *Function_code,
+                    int *InArgCount,
+                    void **InArgListPtr,
+                    int *OutArgCount,
+                    void **OutArgListPtr,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+void setEnvironment(int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+int getEnvironment(int *return_value,
+                   int *return_code,
+                   int *reason_code);
+
+#endif

@@ -1,0 +1,16 @@
+#include <parm.h>
+
+int main(mvsParm *parm)
+{
+
+ if (parm == NULL || parm->length == 0)
+ {
+    return 0;
+ }
+
+ printf("Parm=%s",parm->data);
+ printf("Funcionou!!!");
+
+ return 0;
+
+}

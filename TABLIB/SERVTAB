@@ -1,0 +1,14 @@
+SERVTAB  CSECT
+SERVTAB  AMODE 31
+SERVTAB  RMODE ANY
+ETPARMS  ETDEF TYPE=INITIAL
+ETPC1    ETDEF TYPE=ENTRY,                                             X
+               ROUTINE=0,                                              X
+               AKM=0,                                                  X
+               SSWITCH=YES,                                            X
+               SASN=NEW,                                               X
+               PC=STACKING
+         ETDEF TYPE=FINAL
+ETPLEN   DC    A(*-ETPARMS)
+ETPC1OFF DC    A(ETPC1-ETPARMS)
+         END SERVTAB

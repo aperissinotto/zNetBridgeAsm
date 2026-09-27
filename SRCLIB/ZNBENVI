@@ -1,0 +1,66 @@
+/*
+ zNetBridge - Servico cross-memory global.
+ Autor : Alexandre Perissinotto.
+ Objetivo : Blindar o ambiente
+ Modulo : ZNBENVI
+ Responsavel por conversar com o z/OS atraves de suas macros.
+*/
+
+#include <environ.h>
+
+void setEnvironment(int *return_value,
+                    int *return_code,
+                    int *reason_code)
+{
+    int Function_code = MUST_STAY_CLEAN;
+    int InArgCount = 1;
+    int OutArgCount = 1;
+
+    int inVal = MSC_ENABLE;
+    int outVal = 0;
+
+    void *InArgArray[1];
+    InArgArray[0] = &inVal;
+    void *InArgListPtr = InArgArray;
+
+    void *OutArgArray[1];
+    OutArgArray[0] = &outVal;
+    void *OutArgListPtr = OutArgArray;
+
+    BPX1ENV(&Function_code,
+            &InArgCount,
+            &InArgListPtr,
+            &OutArgCount,
+            &OutArgListPtr,
+            return_value,
+            return_code,
+            reason_code);
+
+    return;
+}
+
+int getEnvironment(int *return_value,
+                   int *return_code,
+                   int *reason_code)
+{
+
+    int Function_code = MUST_STAY_CLEAN;
+    int InArgCount = 1;
+    int OutArgCount = 1;
+    int inVal = MSC_QUERY;
+    int outVal = 0;
+    void *InArgListPtr = &inVal;
+    void *OutArgListPtr = &outVal;
+
+    BPX1ENV(&Function_code,
+            &InArgCount,
+            &InArgListPtr,
+            &OutArgCount,
+            &OutArgListPtr,
+            return_value,
+            return_code,
+            reason_code);
+
+    return outVal;
+}
+

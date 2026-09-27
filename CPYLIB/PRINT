@@ -1,0 +1,16 @@
+#ifndef PRINT
+#define PRINT
+
+#include <stdarg.h>
+
+#define WTO_MAX_SIZE 132
+
+typedef struct wto {
+        unsigned short len;
+        unsigned short code;
+        char msg[WTO_MAX_SIZE];
+} wto;
+
+void printf(const char *fmt, ...);
+
+#endif

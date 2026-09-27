@@ -1,0 +1,145 @@
+#ifndef KERNEL_H
+#define KERNEL_H
+
+#include <stdarg.h>
+
+#pragma linkage(IEANTCR, OS)
+#pragma linkage(IEANTRT, OS)
+#pragma linkage(IEANTDL, OS)
+#pragma linkage(BPX1ATM, OS)
+#pragma linkage(BPX1WAT, OS)
+#pragma linkage(BPX1SDD, OS)
+#pragma linkage(BPX1SOC, OS)
+#pragma linkage(BPX1OPT, OS)
+
+#define WTO_MAX_SIZE 132
+#define PC_TOKEN_NAME "ZNBRID.PCROUTINE"
+#define IEANT_SYSTEM_LEVEL 4
+#define IEANT_NOPERSIST 0
+#define DUBTHREAD 0
+#define AF_INET 2
+#define Sock_Stream 1
+#define IPPROTO_IP 0
+#define SOCK_DIM_SOCKET 1
+#define SOCK_OPTOPTSETSOCKOPT 2
+#define SOCK_SOL_SOCKET 0x0000FFFFUL
+#define SOCK_SO_REUSEADDR 4
+
+typedef struct wto {
+        unsigned short len;
+        unsigned short code;
+        char msg[WTO_MAX_SIZE];
+} wto;
+
+typedef struct eLxList {
+        unsigned int eLxCount;
+        unsigned int eLxSeqNo;
+        unsigned int eLxValue;
+} eLxList;
+
+typedef struct tkList {
+        unsigned int tkCount;
+        unsigned int tkValue;
+} tkList;
+
+typedef struct mvsParm {
+        short length;
+        char  data[4096];
+} mvsParm;
+
+extern void BPX1ATM(const int *Program_name_length,
+                    const char *Program_name,
+                    const int *Argument_length,
+                    const char *Argument,
+                    const unsigned int *Exit_routine_address,
+                    const unsigned int *Exit_parameter_list_address,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1WAT(int *Process_ID,
+                    const int *Options,
+                    int *Status_field_address,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1SDD(const int *Dub_setting,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1SOC(const int *Domain,
+                    const int *Type,
+                    const int *Protocol,
+                    const int *Dimension,
+                    long long *Socket_vector,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1OPT(int *Socket_descriptor,
+                    const int *Operation,
+                    const int *Level,
+                    const int *Option_name,
+                    const int *Option_data_length,
+                    const char *Option_data,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void IEANTCR(const int *level,
+                    const char *name,
+                    const char *token,
+                    const int *persist,
+                    int *rc);
+
+extern void IEANTRT(const int *level,
+                    const char *name,
+                    char *token,
+                    int *rc);
+
+extern void IEANTDL(const int *level,
+                    const char *name,
+                    int *rc);
+
+void printf(const char *fmt, ...);
+int setEstaex(unsigned int *ep,
+              char *wrk);
+int setSup(void);
+int setProb(void);
+int reserveIndex(eLxList *ELxList);
+int setAuth(unsigned short int *axValue);
+int loadProgram(char *module,
+                unsigned int *ep);
+int createEntryTable(tkList *TkList,
+                     unsigned int ep);
+int connectEntryTable(eLxList *ELxList,
+                      tkList *TkList);
+int createNameTokenPair(const int *level,
+                        const char *name,
+                        unsigned char *token,
+                        const int *persist);
+int createTask(const int *Program_name_length,
+               const char *Program_name,
+               const int *Argument_length,
+               const char *Argument,
+               const unsigned int *Exit_routine_address,
+               const unsigned int *Exit_parameter_list_address);
+int waitTask(int *Process_ID,
+             const int *Options,
+             int *Status_field_address);
+int setDubThread(const int *Dub_setting);
+int getSocket(const int *Domain,
+              const int *Type,
+              const int *Protocol,
+              const int *Dimension,
+              long long *Socket_vector);
+int setSocket(int *Socket,
+              const int *Operation,
+              const int *Level,
+              const int *Option_name,
+              const int *Option_data_length,
+              const char *Option_data);
+
+#endif

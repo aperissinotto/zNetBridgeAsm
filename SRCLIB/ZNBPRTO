@@ -1,0 +1,309 @@
+/*
+ zNetBridge - Servico cross-memory global.
+ Autor : Alexandre Perissinotto.
+ Objetivo : Fazer o display de mensagens
+ Modulo : ZNBPRTO
+ Responsavel por conversar com o z/OS atraves de suas macros.
+*/
+
+#include <print.h>
+#include <string.h>
+#include <stddef.h>
+
+static void callWto(char *str)
+{
+
+    wto Wto;
+
+    if (!str) return;
+    if (strlen(str) > WTO_MAX_SIZE) return;
+
+    memset(&Wto, 0, sizeof(Wto));
+
+    Wto.len = (unsigned short)(strlen(str) + 4);
+    Wto.code = 0;
+
+    memcpy(Wto.msg, str, strlen(str));
+
+    __asm ( " WTO MF=(E,(%0)) "
+            :
+            : "r"(&Wto)
+            : "r0", "r1", "r14", "r15" );
+
+    return;
+
+}
+
+static inline void buf_append(char **out,
+                              char *end,
+                              const void *src,
+                              size_t len)
+{
+
+    if (*out >= end || len == 0) return;
+
+    size_t space = (size_t)(end - *out);
+    size_t copy_len = (len < space) ? len : space;
+
+    memcpy(*out, src, copy_len);
+    *out += copy_len;
+
+}
+
+static inline void buf_fill(char **out,
+                            char *end,
+                            char c,
+                            size_t len)
+{
+
+    if (*out >= end || len == 0) return;
+
+    size_t space = (size_t)(end - *out);
+    size_t fill_len = (len < space) ? len : space;
+
+    memset(*out, c, fill_len);
+    *out += fill_len;
+
+}
+
+static char* fmt_num(unsigned long long value,
+                     unsigned int base,
+                     int upper,
+                     char *buf_end)
+{
+
+    char *p = buf_end;
+    const char *digits = upper ? "0123456789ABCDEF"
+                               : "0123456789abcdef";
+
+    if (value == 0)
+    {
+        *(--p) = '0';
+        return p;
+    }
+
+    if (base == 16)
+    {
+        while (value)
+        {
+            *(--p) = digits[value & 0xF];
+            value >>= 4;
+        }
+    }
+    else
+    {
+        while (value)
+        {
+            *(--p) = digits[value % 10];
+            value /= 10;
+        }
+    }
+
+    return p;
+
+}
+
+static int format(char *buffer,
+                  unsigned int size,
+                  const char *format,
+                  va_list ap)
+{
+
+    char *out = buffer;
+    char *end = buffer + (size > 0 ? size - 1 : 0);
+    const char *fmt = format;
+
+    if (size == 0) return 0;
+
+    while (*fmt)
+    {
+        if (*fmt != '%')
+        {
+            const char *start = fmt;
+            while (*fmt && *fmt != '%') fmt++;
+            buf_append(&out, end, start, (size_t)(fmt - start));
+            continue;
+        }
+
+        fmt++;
+
+        if (*fmt == '%')
+        {
+            buf_fill(&out, end, '%', 1);
+            fmt++;
+            continue;
+        }
+
+        int zero_pad = 0;
+        int left_align = 0;
+
+        if (*fmt == '0') { zero_pad = 1; fmt++; }
+        if (*fmt == '-') { left_align = 1; zero_pad = 0; fmt++; }
+
+        unsigned int width = 0;
+        while (*fmt >= '0' && *fmt <= '9')
+        {
+            width = width * 10 + (*fmt - '0');
+            fmt++;
+        }
+
+        int long_count = 0;
+        if (*fmt == 'l')
+        {
+            long_count = 1;
+            fmt++;
+            if (*fmt == 'l')
+            {
+                long_count = 2;
+                fmt++;
+            }
+        }
+
+        char spec = *fmt;
+        if (!spec) break;
+        fmt++;
+
+        if (spec == 'c')
+        {
+            char c = (char)va_arg(ap, int);
+            buf_fill(&out, end, c, 1);
+            continue;
+        }
+
+        if (spec == 's')
+        {
+            const char *s = va_arg(ap, const char *);
+            if (!s) s = "(null)";
+
+            size_t len = strlen(s);
+            size_t pad = (width > len) ? width - len : 0;
+
+            if (!left_align)
+                buf_fill(&out, end, ' ', pad);
+
+            buf_append(&out, end, s, len);
+
+            if (left_align)
+                buf_fill(&out, end, ' ', pad);
+
+            continue;
+        }
+
+        if (spec == 'd' || spec == 'i' || spec == 'u' ||
+            spec == 'x' || spec == 'X' || spec == 'p')
+        {
+            char num_buf[32];
+            char *num_str;
+            unsigned long long uval = 0;
+            int is_signed = (spec == 'd' || spec == 'i');
+            int is_neg = 0;
+            unsigned int base = 10;
+            int upper = (spec == 'X' || spec == 'p');
+
+            memset(num_buf, 0, sizeof(num_buf));
+
+            if (spec == 'p')
+            {
+                uval = (unsigned long long)(unsigned long)
+                       va_arg(ap, void *);
+                base = 16;
+            }
+            else if (is_signed)
+            {
+                long long sval;
+                if (long_count == 0) sval = va_arg(ap, int);
+                else if (long_count == 1) sval = va_arg(ap, long);
+                else sval = va_arg(ap, long long);
+
+                if (sval < 0)
+                {
+                    is_neg = 1;
+                    uval = (unsigned long long)(-(sval + 1)) + 1;
+                }
+                else
+                {
+                    uval = (unsigned long long)sval;
+                }
+            }
+            else
+            {
+                if (long_count == 0)
+                    uval = va_arg(ap, unsigned int);
+                else if (long_count == 1)
+                    uval = va_arg(ap, unsigned long);
+                else
+                    uval = va_arg(ap, unsigned long long);
+
+                if (spec == 'x' || spec == 'X') base = 16;
+            }
+
+            num_str = fmt_num(uval, base, upper,
+                                  num_buf + sizeof(num_buf));
+
+            size_t len = (size_t)((num_buf + sizeof(num_buf))
+                                  - num_str);
+
+            size_t pad = (width > len + is_neg) ?
+                         width - (len + is_neg) : 0;
+
+            if (!left_align && !zero_pad)
+                buf_fill(&out, end, ' ', pad);
+
+            if (is_neg)
+                buf_fill(&out, end, '-', 1);
+
+            if (!left_align && zero_pad)
+                buf_fill(&out, end, '0', pad);
+
+            buf_append(&out, end, num_str, len);
+
+            if (left_align)
+                buf_fill(&out, end, ' ', pad);
+
+            continue;
+        }
+
+        buf_fill(&out, end, '?', 1);
+    }
+
+    *out = '\0';
+    return (int)(out - buffer);
+
+}
+
+static void vprintf(const char *fmt, va_list ap)
+{
+
+    char buffer[WTO_MAX_SIZE];
+
+    int length;
+
+    if (!fmt) return;
+    if (strlen(fmt) > WTO_MAX_SIZE) return;
+
+    memset(buffer, 0, sizeof(buffer));
+
+    length = format(buffer, sizeof(buffer), fmt, ap);
+
+    if (length < 0) return;
+    if (length > WTO_MAX_SIZE) return;
+
+    callWto(buffer);
+
+    return;
+
+}
+
+void printf(const char *fmt, ...)
+{
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+
+    return ;
+
+}
+

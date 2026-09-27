@@ -1,0 +1,322 @@
+ZNBMOM   RSECT
+ZNBMOM   AMODE 31
+ZNBMOM   RMODE ANY
+         SYSSTATE ARCHLVL=6,                                           X
+               ASCENV=P,                                               X
+               AMODE64=NO,                                             X
+               RMODE64=NO
+         IEABRCX DEFINE
+         BAKR  R14,0
+         LARL  R11,LITERAL
+         USING LITERAL,R11
+*+--------------------------------------------------------------------+
+*| OBTEM MEMORIA DE TRABALHO                                          |
+*+--------------------------------------------------------------------+
+         STORAGE OBTAIN,                                               X
+               LENGTH=WRKDLEN,                                         X
+               ADDR=(R13),                                             X
+               LINKAGE=SYSTEM,                                         X
+               EXECUTABLE=NO,                                          X
+               RTCD=(R15),                                             X
+               COND=YES
+*
+         LTR   R15,R15
+         JNZ   ZNBABEND
+         USING WRKDSECT,R13
+*
+         MVC   WWTO(LLWTO),LWTO
+*
+         LARL  R2,LM001L
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*+--------------------------------------------------------------------+
+*| PROTECAO DO AMBIENTE                                               |
+*+--------------------------------------------------------------------+
+         MVHI  FUNCOD,MUST_STAY_CLEAN
+         MVHI  INARCT,1
+         MVHI  INARG1,MSC_ENABLE
+         LA    R1,INARG1
+         ST    R1,INARLS
+         LA    R1,INARLS
+         ST    R1,INARLP
+         MVHI  OUARCT,1
+         MVHI  OUARG1,0
+         LA    R1,OUARG1
+         ST    R1,OUARLS
+         LA    R1,OUARLS
+         ST    R1,OUARLP
+         MVHI  EXTRAD,0
+         MVHI  EXPLAD,0
+         MVHI  RETVAL,0
+         MVHI  RETCOD,0
+         MVHI  REACOD,0
+*
+         LA    R1,WPARMBPX     * PARMLIST
+         LA    R14,FUNCOD      * OFFSET 0
+         LA    R15,INARCT      * OFFSET 4
+         LA    R0,INARLP       * OFFSET 8
+         STM   R14,R0,0(R1)    * SAVE ON PARMLIST
+         LA    R14,OUARCT      * OFFSET 12
+         LA    R15,OUARLP      * OFFSET 16
+         LA    R0,RETVAL       * OFFSET 20
+         STM   R14,R0,12(R1)   * SAVE ON PARMLIST
+         LA    R14,RETCOD      * OFFSET 24
+         LA    R15,REACOD      * OFFSET 28
+         XR    R0,R0           * OFFSET 32
+         STM   R14,R0,24(R1)   * SAVE ON PARMLIST
+         OI    28(R1),X'80'    * SET LAST PARM
+*
+         L     R15,16(,R0)
+         L     R15,544(,R15)
+         L     R15,24(,R15)
+         L     R15,BPX1ENV(,R15)
+         BASR  R14,R15
+*
+         LT    R15,RETVAL
+         JM    ZNBEATTA
+         LARL  R2,LM005L
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*+--------------------------------------------------------------------+
+*| ROTINA DE ATTACH DE TASKS                                          |
+*+--------------------------------------------------------------------+
+         LRL   R3,LNUMTASK
+ATTACH   DS   0H
+         MVHI  PGMNLEN,LPGML
+         MVC   PGMNAME(LPGML),LPGM
+         MVHI  ARGLEN,4
+         ST    R3,ARGUMT
+         MVHI  EXTRAD,0
+         MVHI  EXPLAD,0
+         MVHI  RETVAL,0
+         MVHI  RETCOD,0
+         MVHI  REACOD,0
+*
+         LA    R1,WPARMBPX     * PARMLIST
+         LA    R14,PGMNLEN     * OFFSET 0
+         LA    R15,PGMNAME     * OFFSET 4
+         LA    R0,ARGLEN       * OFFSET 8
+         STM   R14,R0,0(R1)    * SAVE ON PARMLIST
+         LA    R14,ARGUMT      * OFFSET 12
+         LA    R15,EXTRAD      * OFFSET 16
+         LA    R0,EXPLAD       * OFFSET 20
+         STM   R14,R0,12(R1)   * SAVE ON PARMLIST
+         LA    R14,RETVAL      * OFFSET 24
+         LA    R15,RETCOD      * OFFSET 28
+         LA    R0,REACOD       * OFFSET 32
+         STM   R14,R0,24(R1)   * SAVE ON PARMLIST
+         OI    32(R1),X'80'    * SET LAST PARM
+*
+         L     R15,16(,R0)
+         L     R15,544(,R15)
+         L     R15,24(,R15)
+         L     R15,BPX1ATM(,R15)
+         BASR  R14,R15
+*
+         LT    R15,RETVAL
+         JM    ZNBEATTA
+*
+         XC    WMSG,WMSG
+         MVC   WMSG(L'LM002T),LM002T
+         MVC   WFULL,RETVAL
+         UNPK  WDOUBLE(9),WFULL(5)
+         NC    WDOUBLE,LTR1
+         TR    WDOUBLE,LTR2
+         MVC   LM002TK,WDOUBLE
+         MVC   WMSGL,LM002L
+         LA    R2,WMSGL
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*
+         JCT   R3,ATTACH
+*+--------------------------------------------------------------------+
+*| ROTINA DE WAIT DE TASKS                                            |
+*+--------------------------------------------------------------------+
+         LRL   R3,LNUMTASK
+WAIT     DS   0H
+         MVHI  PRCID,-1
+         MVHI  OPTIN,0
+         LA    R1,WAST
+         ST    R1,STFADR
+         MVHI  RETVAL,0
+         MVHI  RETCOD,0
+         MVHI  REACOD,0
+*
+         LA    R1,WPARMBPX     * PARMLIST
+         LA    R14,PRCID       * OFFSET 0
+         LA    R15,OPTIN       * OFFSET 4
+         LA    R0,STFADR       * OFFSET 8
+         STM   R14,R0,0(R1)    * SAVE ON PARMLIST
+         LA    R14,RETVAL      * OFFSET 12
+         LA    R15,RETCOD      * OFFSET 16
+         LA    R0,REACOD       * OFFSET 20
+         STM   R14,R0,12(R1)   * SAVE ON PARMLIST
+         OI    20(R1),X'80'    * SET LAST PARM
+*
+         L     R15,16
+         L     R15,544(,R15)
+         L     R15,24(,R15)
+         L     R15,BPX1WAT(,R15)
+         BALR  R14,R15
+*
+         LT    R15,RETVAL
+         JM    ZNBABEND
+*
+         XC    WMSG,WMSG
+         MVC   WMSG(L'LM003T),LM003T
+         MVC   WFULL,RETVAL
+         UNPK  WDOUBLE(9),WFULL(5)
+         NC    WDOUBLE,LTR1
+         TR    WDOUBLE,LTR2
+         MVC   LM003TK,WDOUBLE
+         MVC   WMSGL,LM003L
+         LA    R2,WMSGL
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*
+         JCT   R3,WAIT
+*+--------------------------------------------------------------------+
+*| ROTINA DE FINALIZACAO                                              |
+*+--------------------------------------------------------------------+
+         MVHI  WAST,0
+         MVHI  RETVAL,0
+         MVHI  RETCOD,0
+         MVHI  REACOD,0
+*
+         LA    R1,WPARMBPX     * PARMLIST
+         LA    R14,WAST        * OFFSET 0
+         LA    R15,RETVAL      * OFFSET 4
+         LA    R0,RETCOD       * OFFSET 8
+         STM   R14,R0,0(R1)    * SAVE ON PARMLIST
+         LA    R14,REACOD      * OFFSET 12
+         XR    R15,R15         * OFFSET 16
+         XR    R0,R0           * OFFSET 20
+         STM   R14,R0,12(R1)   * SAVE ON PARMLIST
+         OI    12(R1),X'80'    * SET LAST PARM
+*
+         L     R15,16
+         L     R15,544(,R15)
+         L     R15,24(,R15)
+         L     R15,BPX1MPC(,R15)
+         BALR  R14,R15
+*
+         LT    R15,RETVAL
+         JM    ZNBABEND
+*
+         LARL  R2,LM888L
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*
+         STORAGE RELEASE,                                              X
+               LENGTH=WRKDLEN,                                         X
+               ADDR=(R13),                                             X
+               LINKAGE=SYSTEM,                                         X
+               EXECUTABLE=NO,                                          X
+               RTCD=(R15),                                             X
+               COND=YES
+*
+ZNB99999 DS   0H
+         PR
+*
+ZNBABEND DS   0H
+         ABEND X'BAD',,,SYSTEM
+*
+ZNBEATTA DS   0H
+         XC    WMSG,WMSG
+         MVC   WMSG(L'LM004T),LM004T
+         MVC   WFULL,RETCOD
+         UNPK  WDOUBLE(9),WFULL(5)
+         NC    WDOUBLE,LTR1
+         TR    WDOUBLE,LTR2
+         MVC   LM004RC,WDOUBLE
+         MVC   WFULL,REACOD
+         UNPK  WDOUBLE(9),WFULL(5)
+         NC    WDOUBLE,LTR1
+         TR    WDOUBLE,LTR2
+         MVC   LM004RS,WDOUBLE
+         MVC   WMSGL,LM004L
+         LA    R2,WMSGL
+         WTO   TEXT=(R2),MF=(E,WWTO)
+         J     ZNBABEND
+*+--------------------------------------------------------------------+
+*| AREA DE CONSTANTES                                                 |
+*+--------------------------------------------------------------------+
+LITERAL  DS   0D
+         LTORG ,
+BPX1ATM  EQU   668                  * ATTACH_EXECMVS
+BPX1MPC  EQU   408                  * MVSPROCCLP
+BPX1WAT  EQU   380                  * WAIT
+BPX1ENV  EQU   960                  * OE_ENV_NP
+MUST_STAY_CLEAN      EQU  13
+MSC_ENABLE       EQU   1
+LNUMTASK DC    F'300'
+LTR1     DC    X'0F0F0F0F0F0F0F0F'
+LTR2     DC    C'0123456789ABCDEF'
+LWTO     WTO   TEXT=,MF=L
+LLWTO    EQU   *-LWTO
+LPGM     DC    C'ZNBSON'
+LPGML    EQU   *-LPGM
+LARG     DC    C'ABCD'
+LARGL    EQU   *-LPGM
+*+--------------------------------------------------------------------+
+*| MENSAGENS                                                          |
+*+--------------------------------------------------------------------+
+         DS   0H
+LM001L   DC    AL2(L'LM001T)
+LM001T   DC    C'ZNETBRIDGE OBTEVE MEMORIA'
+         DS   0H
+LM002L   DC    AL2(L'LM002T)
+LM002T   DC    C'TASK=XXXXXXXX BORNED'
+LM002TK  EQU   WMSG+5,8
+         DS   0H
+LM003L   DC    AL2(L'LM003T)
+LM003T   DC    C'TASK=XXXXXXXX FINISHED'
+LM003TK  EQU   WMSG+5,8
+         DS   0H
+LM004L   DC    AL2(L'LM004T)
+LM004T   DC    C'ERRO=XXXXXXXX REASON=XXXXXXXX'
+LM004RC  EQU   WMSG+5,8
+LM004RS  EQU   WMSG+21,8
+         DS   0H
+LM005L   DC    AL2(L'LM005T)
+LM005T   DC    C'ZNETBRIDGE PROTEGEU O AMBIENTE'
+         DS   0H
+LM888L   DC    AL2(L'LM888T)
+LM888T   DC    C'ZNETBRIDGE ESTA FINALIZANDO'
+*+--------------------------------------------------------------------+
+*| AREA DE TRABALHO                                                   |
+*+--------------------------------------------------------------------+
+WRKDSECT DSECT
+WWTO     WTO   TEXT=,MF=L
+WMSGL    DS    H
+WMSG     DS    CL133
+WPARMBPX DS  21A
+PGMNLEN  DS    F
+PGMNAME  DS    CL8
+ARGLEN   DS    F
+EXTRAD   DS    A
+EXPLAD   DS    A
+PRCID    DS    F
+OPTIN    DS    F
+STFADR   DS    A
+FUNCOD   DS    F
+INARCT   DS    F
+INARLP   DS    A
+INARLS   DS    A
+INARG1   DS    F
+OUARCT   DS    F
+OUARLP   DS    A
+OUARLS   DS    A
+OUARG1   DS    F
+RETVAL   DS    F
+RETCOD   DS    F
+REACOD   DS    F
+WFULL    DS    F
+         DS    X
+WDOUBLE  DS    FD
+         DS    X
+WHALF    DS    H
+         DS    X
+         BPXYWAST DSECT=NO
+ARGUMT   DS    CL4096
+WRKDLEN  EQU   *-WRKDSECT
+*+--------------------------------------------------------------------+
+*| EQUATES DE REGISTRADORES                                           |
+*+--------------------------------------------------------------------+
+         YREGS ,
+         END   ZNBMOM

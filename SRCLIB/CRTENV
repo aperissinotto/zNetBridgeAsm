@@ -1,0 +1,115 @@
+#include <environ.h>
+#include <task.h>
+#include <string.h>
+
+#define num_task 200
+
+int main()
+{
+
+ int i = 0;
+ task Task[num_task];
+
+ for (i = 0 ; i < num_task ; i++)
+ {
+    memset(&Task[i], 0, sizeof(Task[i]));
+    Task[i].Program_name_length = 7;
+    Task[i].Program_name = "ZNBTEST";
+    Task[i].Argument_length = 4;
+    Task[i].Argument = "ABCD";
+    Task[i].Exit_routine_address = 0;
+    Task[i].Exit_parameter_list_address = 0;
+ }
+
+ unsigned int Status_field = 0;
+ void *Status_field_address = &Status_field;
+ int return_value = 0;
+ int return_code = 0;
+ int reason_code = 0;
+
+ printf("Iniciando o zNetBridge v1.0");
+
+ setEnvironment(&return_value,
+                &return_code,
+                &reason_code);
+
+ if (return_value == -1)
+ {
+    printf("Erro no set do ambiente - RC=%X RS=%X",
+           return_code,
+           reason_code);
+ }
+ else
+ {
+    printf("Ambiente protegido com sucesso");
+ }
+
+ for (i = 0 ; i < num_task ; i++)
+ {
+    createTask(&Task[i],
+               &return_value,
+               &return_code,
+               &reason_code);
+
+    if (return_value == -1)
+    {
+        printf("Erro no attach da task - RC=%X RS=%X",
+               return_code,
+               reason_code);
+    }
+    else
+    {
+        printf("Task %X attached com sucesso", Task[i].PID);
+    }
+ }
+
+ for (i = 0 ; i < num_task ; i++)
+ {
+    Status_field = 0;
+    waitTask(&Status_field_address,
+             &return_value,
+             &return_code,
+             &reason_code);
+
+    if (return_value == -1)
+    {
+       if (return_code = outOfTask)
+       {
+          printf("System out of task, ready to finish!");
+          break;
+       }
+       else
+       {
+          printf("Erro no wait - RC=%X RS=%X",
+                 return_code,
+                 reason_code);
+       }
+    }
+    else
+    {
+       printf("Task=%X terminada com sucesso",return_value);
+    }
+
+ }
+
+ cleanResources(&Status_field,
+                &return_value,
+                &return_code,
+                &reason_code);
+
+ if (return_value == -1)
+ {
+    printf("Erro no clean - RC=%X RS=%X",
+           return_code,
+           reason_code);
+ }
+ else
+ {
+    printf("Recursos limpos RV=%X",return_value);
+ }
+
+ printf("Finalizando o zNetBridge v1.0");
+
+ return 0;
+}
+

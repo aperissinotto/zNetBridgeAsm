@@ -1,0 +1,85 @@
+/*
+ zNetBridge - Servico para attach de task.
+ Autor : Alexandre Perissinotto.
+ Objetivo : Fazer um attach de uma task executando um programa
+ Modulo : ZNBTASK
+ Responsavel por conversar com o z/OS atraves de suas macros.
+*/
+
+#include <task.h>
+
+void createTask(task *Task,
+               int *return_value,
+               int *return_code,
+               int *reason_code)
+{
+
+    BPX1ATM(&Task->Program_name_length,
+            Task->Program_name,
+            &Task->Argument_length,
+            Task->Argument,
+            &Task->Exit_routine_address,
+            &Task->Exit_parameter_list_address,
+            return_value,
+            return_code,
+            reason_code);
+
+    if (*return_value != -1)
+    {
+       Task->PID = *return_value;
+    }
+
+    return;
+
+}
+
+void setDubThread(int *Dub_setting,
+                  int *return_value,
+                  int *return_code,
+                  int *reason_code)
+{
+
+    BPX1SDD(Dub_setting,
+            return_value,
+            return_code,
+            reason_code);
+
+    return;
+
+}
+
+void waitTask(void **Status_field_address,
+              int *return_value,
+              int *return_code,
+              int *reason_code)
+{
+
+    int Process_ID = -1;
+    int Options = 0;
+
+    BPX1WAT(&Process_ID,
+            &Options,
+            Status_field_address,
+            return_value,
+            return_code,
+            reason_code);
+
+    return;
+
+}
+
+void cleanResources(unsigned int *Status_field,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code)
+{
+
+    BPX1MPC(Status_field,
+            return_value,
+            return_code,
+            reason_code);
+
+    return;
+
+}
+

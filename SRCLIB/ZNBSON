@@ -1,0 +1,79 @@
+ZNBSON   RSECT
+ZNBSON   AMODE 31
+ZNBSON   RMODE ANY
+         SYSSTATE ARCHLVL=6,                                           X
+               ASCENV=P,                                               X
+               AMODE64=NO,                                             X
+               RMODE64=NO
+         IEABRCX DEFINE
+         BAKR  R14,0
+         LR    R3,R1
+         LARL  R11,LITERAL
+         USING LITERAL,R11
+*+--------------------------------------------------------------------+
+*| OBTEM MEMORIA DE TRABALHO                                          |
+*+--------------------------------------------------------------------+
+         STORAGE OBTAIN,                                               X
+               LENGTH=WRKDLEN,                                         X
+               ADDR=(R13),                                             X
+               LINKAGE=SYSTEM,                                         X
+               EXECUTABLE=NO,                                          X
+               RTCD=(R15),                                             X
+               COND=YES
+*
+         LTR   R15,R15
+         JNZ   ZNBABEND
+         USING WRKDSECT,R13
+*
+         MVC   WWTO(LLWTO),LWTO
+*
+         LARL  R2,LM001L
+         WTO   TEXT=(R2),MF=(E,WWTO)
+*+--------------------------------------------------------------------+
+*| ROTINA DE FINALIZACAO                                              |
+*+--------------------------------------------------------------------+
+         STORAGE RELEASE,                                              X
+               LENGTH=WRKDLEN,                                         X
+               ADDR=(R13),                                             X
+               LINKAGE=SYSTEM,                                         X
+               EXECUTABLE=NO,                                          X
+               RTCD=(R15),                                             X
+               COND=YES
+*
+ZNB99999 DS   0H
+         PR
+*
+ZNBABEND DS   0H
+         ABEND X'BAD',,,SYSTEM
+*+--------------------------------------------------------------------+
+*| AREA DE CONSTANTES                                                 |
+*+--------------------------------------------------------------------+
+LITERAL  DS   0D
+         LTORG ,
+LWTO     WTO   TEXT=,MF=L
+LLWTO    EQU   *-LWTO
+*+--------------------------------------------------------------------+
+*| MENSAGENS                                                          |
+*+--------------------------------------------------------------------+
+         DS   0H
+LM001L   DC    AL2(L'LM001T)
+LM001T   DC    C'ZSON XXXXXXXX NASCEU'
+LM001TK  EQU   WMSG+5,8
+*+--------------------------------------------------------------------+
+*| AREA DE TRABALHO                                                   |
+*+--------------------------------------------------------------------+
+WRKDSECT DSECT
+WWTO     WTO   TEXT=,MF=L
+WMSG     DS    CL133
+WFULL    DS    F
+         DS    X
+WDOUBLE  DS    FD
+         DS    X
+WHALF    DS    H
+         DS    X
+WRKDLEN  EQU   *-WRKDSECT
+*+--------------------------------------------------------------------+
+*| EQUATES DE REGISTRADORES                                           |
+*+--------------------------------------------------------------------+
+         YREGS ,
+         END   ZNBSON

@@ -1,0 +1,11 @@
+#ifndef PARM_H
+#define PARM_H
+
+#include <stddef.h>
+
+typedef struct mvsParm {
+        short length;
+        char  data[4096];
+} mvsParm;
+
+#endif

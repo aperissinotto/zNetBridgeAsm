@@ -1,0 +1,69 @@
+#ifndef TASK
+#define TASK
+
+#pragma linkage(BPX1ATM, OS)
+#pragma linkage(BPX1WAT, OS)
+#pragma linkage(BPX1MPC, OS)
+#pragma linkage(BPX1SDD, OS)
+
+#define DUBTHREAD 0
+#define outOfTask 0x73
+
+typedef struct task {
+        unsigned int PID;
+        int Program_name_length;
+        char *Program_name;
+        int Argument_length;
+        char *Argument;
+        unsigned int Exit_routine_address;
+        unsigned int Exit_parameter_list_address;
+} task;
+
+extern void BPX1ATM(int *Program_name_length,
+                    char *Program_name,
+                    int *Argument_length,
+                    char *Argument,
+                    unsigned int *Exit_routine_address,
+                    unsigned int *Exit_parameter_list_address,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1WAT(int *Process_ID,
+                    int *Options,
+                    void **Status_field_address,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1MPC(unsigned int *Status_field,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+extern void BPX1SDD(int *Dub_setting,
+                    int *return_value,
+                    int *return_code,
+                    int *reason_code);
+
+void createTask(task *Task,
+                int *return_value,
+                int *return_code,
+                int *reason_code);
+
+void waitTask(void **Status_field_address,
+              int *return_value,
+              int *return_code,
+              int *reason_code);
+
+void cleanTask(unsigned int *Status_field,
+               int *return_value,
+               int *return_code,
+               int *reason_code);
+
+void setDubThread(int *Dub_setting,
+                  int *return_value,
+                  int *return_code,
+                  int *reason_code);
+
+#endif
